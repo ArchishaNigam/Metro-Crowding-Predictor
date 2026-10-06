@@ -1,0 +1,5 @@
+Application domain: Transit analytics
+Program type: Full-stack
+Backend: Python / FastAPI
+Frontend: JavaScript / React
+Database: SQLite
