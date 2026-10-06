@@ -1,0 +1,63 @@
+A local-only, single-leg Delhi Metro planning application that uses manually maintained stations, timetable patterns, and public holidays to calculate deterministic crowding predictions, persist matched prediction snapshots, and show an in-app high-crowding advisory.
+
+Design goals:
+
+Support correcting and persisting local station, timetable-pattern, and public-holiday source records.
+Derive day type deterministically and match one inclusive local timetable time range.
+Persist only matched predictions as immutable historical snapshots.
+Show the leave-earlier advisory only for High crowding and only in-app.
+Provide explicit validation, empty states, filtering, and chronological result ordering without authentication or external connectivity.
+Business rules:
+
+Station names are trimmed, required, and unique by trimmed value. A station referenced by a timetable pattern cannot be deleted.
+Timetable patterns require existing distinct station IDs, valid closed day type and crowding values, 24-hour HH:MM times, and start_time earlier than end_time.
+Inclusive timetable time ranges cannot overlap for the same origin, destination, and day type; shared endpoints overlap.
+Holidays require a YYYY-MM-DD date, a non-blank trimmed display name, and a unique calendar date.
+A holiday date is Holiday; a non-holiday Saturday or Sunday is Weekend; all other non-holiday dates are Weekday.
+Journey prediction requires existing distinct station IDs, a YYYY-MM-DD journey date, and HH: MM planned departure time.
+A match has identical station pair and derived day type, with start_time less than or equal to planned time and end_time greater than or equal to planned time.
+A matched prediction uses the matched pattern baseline crowding and saves a snapshot of station names and derived journey facts. A no-match prediction is not saved.
+Only High matched predictions set is_leave_earlier_alert_shown to true. Their alert text is Leave 20 minutes earlier and the suggestion is exactly 20 minutes before the entered time, including a preceding calendar date.
+Saved prediction results cannot be updated or deleted.
+Result list optional crowding filter is exact. Default and filtered ordering is journey_date ascending, planned_departure_time ascending, then id ascending.
+Invalid creates or edits return field-level errors and make no partial change; rejected edits preserve the prior record.
+UI screens:
+
+Application shell with an informational Delhi Metro Planning View selector.
+Station setup list and create, edit, and delete controls.
+Timetable-pattern setup list and create, edit, and delete controls.
+Public-holiday setup list and create, edit, and delete controls.
+Journey planner with station selectors, date, time, and prediction result.
+Saved prediction-results list with crowding-level filter.
+UI states:
+
+Loading state for API-backed lists and selectors.
+Empty setup state and disabled dependent actions when prerequisite stations or patterns are unavailable.
+Inline validation state retaining entered values and identifying invalid, duplicate, overlap, identical-station, or deletion-reference errors.
+No prediction available state without advisory.
+Matched Low or Medium state with journey facts, derived day type, and crowding level only.
+Matched High state with journey facts, derived day type, crowding level, Leave 20 minutes earlier text, and suggested date and time.
+Saved-results empty state and filtered no-results state.
+Interaction flows:
+
+Station setup loads records, submits create or edit, refreshes after success, and retains values with errors after failure; delete succeeds only when not referenced.
+Timetable setup loads stations and patterns, submits required pair, day type, time range, and crowding, then displays returned record or validation errors.
+Holiday setup submits date and display name, refreshes on success, or displays retained-form validation errors.
+Journey planner submits distinct stations, date, and time; it displays no-match status or a matched saved prediction and renders advisory only for High.
+Results list requests chronological saved predictions with optional exact crowding filter and renders list, empty state, or filtered no-results state.
+API endpoints:
+
+GET /api/stations — Order by trimmed name then id ascending.Empty items indicate no stations.
+POST /api/stations — 422 for blank or duplicate name.; Store trimmed name.
+PUT /api/stations/{id} — 404 if absent.; 422 preserves existing record for invalid or duplicate name.
+DELETE /api/stations/{id} — 404 if absent.; 409 if referenced by a timetable pattern.
+GET /api/timetable-patterns — Order by origin name, destination name, day type, start time, then id.; Empty items indicate no patterns.
+POST /api/timetable-patterns — 422 for unknown or identical stations, invalid fields, invalid ordering, or inclusive overlap.
+PUT /api/timetable-patterns/{id} — 404 if absent.; 422 preserves existing record for invalid input or inclusive overlap.
+DELETE /api/timetable-patterns/{id} — 404 if absent.
+GET /api/public-holidays — Order by calendar_date then id ascending. Empty items indicate no holidays.
+POST /api/public-holidays — 422 for invalid date, blank name, or duplicate date.
+PUT /api/public-holidays/{id} — 404 if absent.422 preserves the existing record for invalid or duplicate values.
+DELETE /api/public-holidays/{id} — 404 if absent.
+POST /api/journey-predictions — 422 with field errors for missing, invalid, unknown, or identical stations.; No match returns prediction_available false with nullable result fields and saves nothing.; Match saves a snapshot; advisory fields are populated only for High.
+GET /api/saved-prediction-results — Order by journey_date, planned_departure_time, then id ascending.Empty items support both empty-history and filtered-no-results states.; No update or delete endpoint exists for immutable saved results.
