@@ -1,0 +1,187 @@
+Delhi Metro Crowding Predictor lets a commuter plan a station-to-station journey for a date and departure time using locally maintained station, timetable-pattern, and public-holiday records. Predictions classify dates as Weekday, Weekend, or Holiday and use a matching timetable pattern’s baseline crowding level. Saved prediction results provide historical journey predictions and may include an in-app leave-earlier advisory.
+
+Surface: ui · Scored requirements: 10
+
+A requirement is satisfied only if all of its scenarios pass.
+
+FR-1 — The product must provide an operating-context selector labeled “Delhi Metro Planning View”; it must be presented as a local view selector only and must not require login, create accounts, or enforce access control.
+FR-1.1 Planning view is available without login
+Start from the application as first loaded.
+Locate the operating-context selector.
+Select “Delhi Metro Planning View”.
+Expected: The interface shows “Delhi Metro Planning View” without requesting login or account creation.
+
+FR-2 — The product must allow creation and correction of stations. Each station must have one required name, and station names must be unique after trimming leading and trailing whitespace. A station cannot be removed while any timetable pattern references it.
+FR-2.1 Station name is required and unique
+Start from the application as first loaded.
+Open station setup.
+Attempt to save a station with no name.
+Add a station named “Central”.
+Attempt to add a station named “ Central ”.
+Expected: A visible validation message identifies the blank or duplicate station name, and only one station named “Central” appears.
+
+FR-2.2 Referenced station cannot be removed
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Open timetable setup and add a Weekday pattern from “Alpha” to “Bravo” from 09:00 to 10:00 with Low baseline crowding.
+Return to station setup and attempt to remove “Alpha”.
+Expected: A visible validation message states that “Alpha” cannot be removed, and “Alpha” remains in station setup.
+
+FR-2.3 Station correction updates saved station
+Start from the application as first loaded.
+Open station setup and add a station named “Old Town”.
+Edit that station name to “New Town” and save.
+Expected: Station setup shows “New Town” and no longer shows “Old Town”.
+
+FR-3 — The product must allow creation and correction of timetable patterns. Each pattern must own exactly one origin station, one destination station, one day type from Weekday, Weekend, or Holiday, one inclusive start time, one inclusive end time, and one baseline crowding level from Low, Medium, or High. Origin and destination must differ, start time must be earlier than end time, and no two patterns may have the same origin, destination, day type, and overlapping inclusive time ranges.
+FR-3.1 Valid timetable pattern is saved
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Open timetable setup and add a Holiday pattern from “Alpha” to “Bravo” from 08:00 to 09:00 with Medium baseline crowding.
+Expected: Timetable setup shows a saved Holiday pattern from “Alpha” to “Bravo” from 08:00 to 09:00 with Medium crowding.
+
+FR-3.2 Invalid timetable pattern is rejected
+Start from the application as first loaded.
+Open station setup and add a station named “Alpha”.
+Open timetable setup and attempt to add a Weekday pattern from “Alpha” to “Alpha” from 09:00 to 09:00 with Low baseline crowding.
+Expected: A visible validation message identifies the invalid pattern, and no timetable pattern is shown.
+
+FR-3.3 Overlapping timetable pattern is rejected
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Open timetable setup and add a Weekday pattern from “Alpha” to “Bravo” from 08:00 to 09:00 with Low baseline crowding.
+Attempt to add a Weekday pattern from “Alpha” to “Bravo” from 09:00 to 10:00 with High baseline crowding.
+Expected: A visible validation message identifies overlapping time ranges, and only the 08:00 to 09:00 pattern is shown.
+
+FR-4 — The product must allow creation and correction of public-holiday records. Each holiday record must own one calendar date and one required display name, and only one holiday record may exist for a date. A holiday date must classify that entire date as Holiday regardless of its weekday; a non-holiday Saturday or Sunday must classify as Weekend; every other non-holiday date must classify as Weekday.
+FR-4.1 Holiday overrides weekend classification
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Open timetable setup and add a Holiday pattern from “Alpha” to “Bravo” from 08:00 to 09:00 with High baseline crowding.
+Open holiday setup and add holiday date 2024-06-01 named “Saturday Festival”.
+Plan a journey from “Alpha” to “Bravo” on 2024-06-01 at 08:30 and request a prediction.
+Expected: The prediction displays day type Holiday and High crowding.
+
+FR-4.2 Nonholiday dates derive weekday types
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Open timetable setup and add a Weekend pattern from “Alpha” to “Bravo” from 08:00 to 09:00 with Low baseline crowding.
+Plan a journey from “Alpha” to “Bravo” on 2024-06-02 at 08:30 and request a prediction.
+Expected: The prediction displays day type Weekend and Low crowding.
+
+FR-4.3 Duplicate holiday date is rejected
+Start from the application as first loaded.
+Open holiday setup and add holiday date 2024-10-02 named “Gandhi Jayanti”.
+Attempt to add holiday date 2024-10-02 named “Second Entry”.
+Expected: A visible validation message identifies the duplicate holiday date, and only “Gandhi Jayanti” is shown for 2024-10-02.
+
+FR-5 — The journey planner must require an origin station, a destination station, a calendar date, and a planned departure time. It must reject a request with identical origin and destination and visibly identify each missing or invalid input.
+FR-5.1 Missing journey inputs are identified
+Start from the application as first loaded.
+Open the journey planner.
+Request a prediction without entering any journey inputs.
+Expected: The interface visibly identifies origin, destination, date, and planned departure time as required inputs.
+
+FR-5.2 Identical journey stations are rejected
+Start from the application as first loaded.
+Open station setup and add a station named “Alpha”.
+Open the journey planner, select “Alpha” as both origin and destination, enter date 2024-06-03 and time 08:30, and request a prediction.
+Expected: The interface visibly identifies that origin and destination must differ.
+
+FR-6 — For a valid journey request, the product must derive the date’s day type, then match the single timetable pattern with the same origin, destination, derived day type, and an inclusive time range containing the planned departure time. When matched, the displayed predicted crowding must equal that pattern’s baseline crowding and the result must display the origin, destination, date, planned departure time, derived day type, and matched baseline crowding. When no pattern matches, it must display “No prediction available” and must not display a leave-earlier alert.
+FR-6.1 Inclusive endpoint matches timetable pattern
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Open timetable setup and add a Weekday pattern from “Alpha” to “Bravo” from 08:00 to 09:00 with Medium baseline crowding.
+Plan a journey from “Alpha” to “Bravo” on 2024-06-03 at 09:00 and request a prediction.
+Expected: The result displays Alpha, Bravo, 2024-06-03, 09:00, Weekday, and Medium crowding.
+
+FR-6.2 Unmatched journey shows no prediction
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Open timetable setup and add a Weekday pattern from “Alpha” to “Bravo” from 08:00 to 09:00 with Low baseline crowding.
+Plan a journey from “Alpha” to “Bravo” on 2024-06-03 at 10:00 and request a prediction.
+Expected: The interface displays “No prediction available” and displays no leave-earlier alert.
+
+FR-7 — The product must create a saved prediction result only when a journey request has a matching timetable pattern. A saved result must retain the submitted journey facts, the day type derived at prediction time, the matched crowding level, and whether an alert was shown; later edits to stations, timetable patterns, or holidays must not alter already saved results.
+FR-7.1 Matched prediction is saved historically
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Open timetable setup and add a Weekday pattern from “Alpha” to “Bravo” from 08:00 to 09:00 with Low baseline crowding.
+Plan a journey from “Alpha” to “Bravo” on 2024-06-03 at 08:30 and request a prediction.
+Edit the timetable pattern baseline crowding to High and save.
+Open the prediction-results list.
+Expected: The saved result for 2024-06-03 at 08:30 shows Alpha, Bravo, Weekday, and Low crowding.
+
+FR-7.2 Unmatched prediction is not saved
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Plan a journey from “Alpha” to “Bravo” on 2024-06-03 at 08:30 and request a prediction.
+Open the prediction-results list.
+Expected: The prediction-results list shows a visible no-results explanation.
+
+FR-8 — The product must show an in-app alert only for a saved prediction whose matched crowding level is High. The alert text must include “Leave 20 minutes earlier” and must display a suggested departure time exactly 20 minutes before the submitted planned departure time, including when that time falls on the preceding calendar day. Low and Medium results must display no leave-earlier alert.
+FR-8.1 High prediction shows earlier alert
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Open timetable setup and add a Weekday pattern from “Alpha” to “Bravo” from 00:00 to 00:30 with High baseline crowding.
+Plan a journey from “Alpha” to “Bravo” on 2024-06-03 at 00:10 and request a prediction.
+Expected: The saved prediction displays “Leave 20 minutes earlier” and suggested departure 23:50 on 2024-06-02.
+
+FR-8.2 Medium prediction shows no alert
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Open timetable setup and add a Weekday pattern from “Alpha” to “Bravo” from 08:00 to 09:00 with Medium baseline crowding.
+Plan a journey from “Alpha” to “Bravo” on 2024-06-03 at 08:30 and request a prediction.
+Expected: The saved Medium prediction displays no leave-earlier alert.
+
+FR-9 — The product must provide a prediction-results list. By default it must include all saved results ordered by journey date ascending and then planned departure time ascending; ties must be ordered by creation order ascending. It must support an optional filter of Low, Medium, or High that combines as an exact crowding-level match. With no saved results, or with no results matching the selected filter, it must show a visible no-results explanation.
+FR-9.1 Results sort by date and time
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Open timetable setup and add a Weekday pattern from “Alpha” to “Bravo” from 08:00 to 10:00 with Low baseline crowding.
+Plan a journey from “Alpha” to “Bravo” on 2024-06-04 at 09:00 and request a prediction.
+Plan a journey from “Alpha” to “Bravo” on 2024-06-03 at 09:30 and request a prediction.
+Plan a journey from “Alpha” to “Bravo” on 2024-06-03 at 08:30 and request a prediction.
+Open the prediction-results list.
+Expected: The results list orders the journeys as 2024-06-03 08:30, 2024-06-03 09:30, then 2024-06-04 09:00.
+
+FR-9.2 Crowding filter exactly matches results
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Open timetable setup and add a Weekday pattern from “Alpha” to “Bravo” from 08:00 to 08:30 with Low baseline crowding.
+Add a Weekday pattern from “Alpha” to “Bravo” from 09:00 to 09:30 with High baseline crowding.
+Plan a journey from “Alpha” to “Bravo” on 2024-06-03 at 08:15 and request a prediction.
+Plan a journey from “Alpha” to “Bravo” on 2024-06-03 at 09:15 and request a prediction.
+Open the prediction-results list and filter by High.
+Expected: The results list shows only the 2024-06-03 09:15 High result.
+
+FR-9.3 Empty filter shows explanation
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Open timetable setup and add a Weekday pattern from “Alpha” to “Bravo” from 08:00 to 09:00 with Low baseline crowding.
+Plan a journey from “Alpha” to “Bravo” on 2024-06-03 at 08:30 and request a prediction.
+Open the prediction-results list and filter by High.
+Expected: The prediction-results list shows a visible no-results explanation.
+
+FR-10 — The product must allow a user to correct a station, timetable pattern, or holiday record through its setup view. A rejected correction must leave the previously saved record unchanged and show the validation reason. Saved prediction results are historical and cannot be edited or deleted in the first version.
+FR-10.1 Rejected station correction preserves record
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Edit “Bravo” to “ Alpha ” and save.
+Expected: A visible validation message identifies the duplicate station name, and station setup still shows “Bravo”.
+
+FR-10.2 Rejected timetable correction preserves record
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Open timetable setup and add a Weekday pattern from “Alpha” to “Bravo” from 08:00 to 09:00 with Low baseline crowding.
+Edit the pattern end time to 08:00 and save.
+Expected: A visible validation message identifies the invalid time range, and the saved pattern still ends at 09:00.
+
+FR-10.3 Saved prediction cannot be changed
+Start from the application as first loaded.
+Open station setup and add stations named “Alpha” and “Bravo”.
+Open timetable setup and add a Weekday pattern from “Alpha” to “Bravo” from 08:00 to 09:00 with Low baseline crowding.
+Plan a journey from “Alpha” to “Bravo” on 2024-06-03 at 08:30 and request a prediction.
+Open the prediction-results list.
+Expected: The saved prediction result has no available edit or delete action.
